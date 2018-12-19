@@ -13,19 +13,21 @@
 int server_handshake(int *to_client) {
 	char store[HANDSHAKE_BUFFER_SIZE];
 	mkfifo("wkp", 0600);
+	
+	printf("Well Known Pipe OPEN!\n");
+	printf("WAITING FOR THE CLIENT!\n");
 
-	printf("Waiting for DE client...\n");
 	int wkpid =  open("wkp", O_RDONLY | O_CREAT, 0600);
-
-	if(wkpid + 1){
-		printf("SERVER: well-known-pipe is open!\n");
-	}
-	else{
-		printf("SERVER: error makin well-known-pipe [%s]\n", strerror(errno));
-		remove("wkp");
-		exit(EXIT_FAILURE);
-	}
-
+	
+	//if(wkpid + 1){
+	//	printf("SERVER: well-known-pipe is open!\n");
+	//}
+	//else{
+	//	printf("SERVER: error makin well-known-pipe [%s]\n", strerror(errno));
+	//	remove("wkp");
+	//	exit(EXIT_FAILURE);
+	//}
+	
 	int res = read(wkpid, store, HANDSHAKE_BUFFER_SIZE);
 	
 	if(res == -1){
@@ -36,17 +38,18 @@ int server_handshake(int *to_client) {
 	}
 
 	printf("Pipe name has been gotten: %s\n", store);
+	printf("Removing Well Known Pipe!\n");
+	remove("wkp");
 	
 	*to_client = open(store, O_WRONLY);
 
 	if(*to_client + 1){
-		printf("SERVER: successfully opened!\n");
+		printf("SERVER: successfully connected to client!\n");
 	}
 	else{
 		printf("SERVER: error opening [%s]\n", strerror(errno));
 	}
 
-	remove("wkp");
 	write(*to_client, ACK, sizeof(ACK));
 	printf("SERVER: sending message [%s]\n", ACK);
 	
@@ -84,10 +87,10 @@ int client_handshake(int *to_server) {
 
 	*to_server = open("wkp", O_WRONLY);
 	if(*to_server + 1){
-		printf("CLIENT: well-known-pipe open SUCCESS!\n");
+		printf("CLIENT: private-pipe open SUCCESS!\n");
 	}
 	else{
-		printf("CLIENT: ERROR OPENING well-known-pipe\n");
+		printf("CLIENT: ERROR OPENING private-pipe\n");
 		exit(0);
 	}
 	
@@ -104,8 +107,9 @@ int client_handshake(int *to_server) {
 
 	read(pkw, store, HANDSHAKE_BUFFER_SIZE);
 	printf("CLIENT: received message [%s]\n", store);
-
+	printf("CLIENT: removing private FIFO!\n");
 	remove("pkw");
+	printf("CLIENT: Sending message [%s] back!\n", ACK);
 	write(*to_server, ACK, sizeof(ACK));
 	return pkw;
 
